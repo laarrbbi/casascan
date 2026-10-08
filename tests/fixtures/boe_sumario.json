@@ -1,0 +1,12 @@
+{"status":{"code":"200","text":"ok"},"data":{"sumario":{"metadatos":{"publicacion":"BOE","fecha_publicacion":"20261007"},
+"diario":[{"numero":"241","sumario_diario":{"identificador":"BOE-S-2026-241","url_pdf":{"texto":"https://www.boe.es/boe/dias/2026/10/07/pdfs/BOE-S-2026-241.pdf"}},
+"seccion":[
+ {"codigo":"4","nombre":"IV. Administración de Justicia","departamento":{"codigo":"7010","nombre":"JUZGADOS DE PRIMERA INSTANCIA","epigrafe":{"nombre":"MÁLAGA","item":{"identificador":"BOE-B-2026-40001","titulo":"Edicto sobre ejecución hipotecaria de finca en Málaga","url_pdf":{"texto":"/boe/dias/2026/10/07/pdfs/BOE-B-2026-40001.pdf","szBytes":"1000"},"url_html":"https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-40001"}}}},
+ {"codigo":"5B","nombre":"V. Anuncios - B. Otros anuncios oficiales","departamento":[
+   {"codigo":"9999","nombre":"TESORERÍA GENERAL DE LA SEGURIDAD SOCIAL","epigrafe":[{"nombre":"Anuncios","item":[
+     {"identificador":"BOE-B-2026-40002","titulo":"Anuncio de la Dirección Provincial de la TGSS de Madrid de subasta pública de inmueble","url_html":"https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-40002"},
+     {"identificador":"BOE-B-2026-40003","titulo":"Anuncio de la Dirección Provincial de la TGSS de Sevilla sobre contratación de limpieza","url_html":"https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-40003"}
+   ]}]},
+   {"codigo":"9998","nombre":"NOTARÍAS","epigrafe":{"nombre":"Anuncios","item":{"identificador":"BOE-B-2026-40004","titulo":"Anuncio de la Notaría de doña Ana Ruiz, de Marbella (Málaga), sobre venta extrajudicial de finca hipotecada"}}}
+ ]}
+]}]}}}

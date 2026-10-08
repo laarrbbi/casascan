@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "casascan"
+version = "0.1.0"
+description = "Bot que busca inmuebles en Idealista, Fotocasa, Aliseda (Sareb), Servihabitat, subastas del BOE y de la Seguridad Social"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+antibot = ["curl_cffi>=0.7", "playwright>=1.45"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+casascan = "casascan.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["casascan*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120

@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  CasaScan · configuración
+#  Copia este fichero a config.yaml (python -m casascan init) y ajusta tus criterios.
+# ─────────────────────────────────────────────────────────────────────────────
+
+criterios:
+  # Códigos INE ("28"), nombres ("Málaga") o comunidades ("Andalucía"). "todas" = toda España.
+  provincias: [Madrid]
+  localidades: []            # p. ej. [Getafe, Leganés]  (vacío = toda la provincia)
+  codigos_postales: []       # p. ej. ["28901", "28902"]
+  tipos: [vivienda]          # vivienda, local, garaje, trastero, nave, solar, rustica
+  precio_min: null
+  precio_max: 150000         # en subastas se compara con el valor de subasta (ver fuentes.boe.precio_referencia)
+  superficie_min: 50         # m²
+  superficie_max: null
+  habitaciones_min: 2
+  descuento_min: null        # % mínimo por debajo de la tasación (solo subastas), p. ej. 30
+  palabras_clave: []         # si pones alguna, el anuncio debe contener al menos una
+  excluir_palabras:          # descarta lo que contenga cualquiera de estas
+    - nuda propiedad
+    - usufructo
+    - aprovechamiento por turnos
+    - multipropiedad
+    - derecho de uso
+    # - ocupad              # descomenta para quitar viviendas ocupadas
+    # - proindiviso         # o participaciones indivisas
+  # Si a un resultado le falta un dato (el BOE no siempre dice los m² o las habitaciones),
+  # con estricto: false se mantiene; con true se descarta.
+  estricto: false
+
+fuentes:
+  # ── Portales ──────────────────────────────────────────────────────────────
+  idealista:
+    activo: true
+    # Con IDEALISTA_API_KEY / IDEALISTA_API_SECRET usa la API oficial (recomendado).
+    solo_bancos: false       # solo API: pisos de bancos (bankOffer)
+    max_paginas: 3
+    # Puedes pegar tus propias búsquedas hechas en la web (se respetan sus filtros):
+    urls: []
+    #  - https://www.idealista.com/venta-viviendas/madrid-provincia/con-precio-hasta_150000/
+    #  - https://www.idealista.com/pro/aliseda/venta-viviendas/madrid-provincia/
+    #  - https://www.idealista.com/pro/servihabitat1/venta-viviendas/madrid-provincia/
+  fotocasa:
+    activo: true
+    max_paginas: 3
+    urls: []
+
+  # ── Bancos y Sareb ────────────────────────────────────────────────────────
+  aliseda:                   # comercializadora de la Sareb
+    activo: true
+    max_paginas: 5
+    urls: []                 # p. ej. https://www.alisedainmobiliaria.com/comprar-viviendas/andalucia/malaga
+  servihabitat:
+    activo: true
+    max_paginas: 5
+    urls: []                 # si no encuentra tu provincia, pega aquí la URL de tu búsqueda
+
+  # ── Subastas oficiales ────────────────────────────────────────────────────
+  boe:                       # subastas.boe.es: juzgados de tu provincia, notarías, Hacienda…
+    activo: true
+    # PU = próxima apertura (aún no se puede pujar), EJ = celebrándose (abierta)
+    # SU = suspendida, CA = cancelada, PC/FS = concluida/finalizada
+    estados: [PU, EJ]
+    origenes: []             # vacío = todas; o [judicial, notarial, agencia_tributaria, administrativa]
+    precio_referencia: valor_subasta   # valor_subasta | puja_minima | tasacion
+    detalle: true            # abrir la ficha de cada subasta (precio, dirección, m²…)
+    pujas: false             # leer también la puja máxima actual
+    max_paginas: 20
+    cache_horas: 24          # no reabrir fichas ya leídas en las últimas X horas (0 = siempre)
+  seguridad_social:          # subastas de bienes embargados de la TGSS
+    activo: true
+    detalle: true
+    max_paginas: 20
+    cache_horas: 24
+
+  # ── Antes de la subasta ───────────────────────────────────────────────────
+  boe_anuncios:              # anuncios/edictos del BOE: ventas extrajudiciales, embargos, apremios…
+    activo: true
+    dias: 7                  # cuántos días hacia atrás revisar
+    palabras: []             # vacío = subasta, ejecución hipotecaria, venta extrajudicial, enajenación, apremio, embargo
+
+red:
+  pausa_min: 2.0             # segundos entre peticiones (sé respetuoso: el BOE pone captcha si vas rápido)
+  pausa_max: 4.0
+  timeout: 30
+  reintentos: 3
+  navegador: false           # true = Chromium real con Playwright (para Idealista/Fotocasa)
+  navegador_visible: false   # true = ver la ventana (para resolver un captcha a mano una vez)
+  perfil_navegador: .casascan_navegador
+
+salida:
+  carpeta: resultados
+  formatos: [csv, html, json]
+  solo_nuevos: false         # true = el informe solo trae novedades y bajadas de precio
+  base_datos: casascan.db    # memoria del bot para detectar novedades
+
+enriquecer_catastro: false   # completar m²/uso/año con el Catastro cuando haya referencia catastral
+
+notificaciones:
+  telegram:
+    activo: false
+    token: ${TELEGRAM_TOKEN}       # de @BotFather
+    chat_id: ${TELEGRAM_CHAT_ID}

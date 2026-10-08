@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<consulta_dnp xmlns="http://www.catastro.meh.es/">
+<control><cudnp>1</cudnp><cucons>1</cucons><cucul>0</cucul></control>
+<bico><bi><idbi><cn>UR</cn><rc><pc1>3045301</pc1><pc2>WF3634N</pc2><car>0157</car><cc1>J</cc1><cc2>Y</cc2></rc></idbi>
+<dt><loine><cp>4</cp><cm>79</cm></loine></dt>
+<ldt>UR PLAYA SERENA 0 Es:3 Pl:00 Pt:03 04740 ROQUETAS DE MAR (ALMERÍA)</ldt>
+<debi><luso>Residencial</luso><sfc>85</sfc><cpt>0,021000</cpt><ant>1985</ant></debi></bi></bico>
+</consulta_dnp>
