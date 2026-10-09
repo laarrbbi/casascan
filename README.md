@@ -190,6 +190,21 @@ informes de *Actions*.
 
 Recibirás solo lo nuevo y las bajadas de precio.
 
+## Si algo no funciona: modo diagnóstico
+
+```bash
+python -m casascan diagnostico                  # todas las fuentes, en tu primera provincia
+python -m casascan diagnostico --fuentes boe,aliseda --provincias Malaga
+```
+
+(En Windows: doble clic en **`diagnostico.bat`**.) Hace una búsqueda mínima en cada web, guarda todo lo que devuelven y muestra un
+resumen por fuente: si conecta, si hay bloqueo o captcha, cuántos resultados
+saca, qué datos se quedan vacíos y qué estructura tiene cada página (tablas,
+anuncios, JSON…). Todo queda en `resultados/diagnostico_FECHA.zip`: comparte ese
+fichero (o el texto que sale en pantalla) para poder arreglar el extractor que
+falle. En GitHub: *Actions → bot → Run workflow* con modo `diagnostico`; el
+resumen sale en el registro de la ejecución y el .zip en *Artifacts*.
+
 ## Uso responsable
 
 - El bot va **despacio a propósito** (2–4 s entre peticiones). El Portal de
@@ -230,6 +245,7 @@ casascan/
   report.py         CSV, JSON y HTML
   notify.py         Telegram
   catastro.py       enriquecimiento con el Catastro
+  diagnose.py       modo diagnóstico (prueba cada web y guarda sus páginas)
   sources/
     boe.py              Portal de Subastas del BOE
     seguridad_social.py Subastas TGSS

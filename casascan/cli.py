@@ -59,6 +59,13 @@ def build_parser() -> argparse.ArgumentParser:
     w = sub.add_parser("vigilar", help="repite la búsqueda cada X minutos y avisa de novedades")
     common(w)
     w.add_argument("--cada", type=float, default=360, help="minutos entre búsquedas (por defecto 360)")
+    d = sub.add_parser("diagnostico", help="prueba cada web, guarda lo que devuelve y resume qué falla")
+    d.add_argument("-c", "--config", default="config.yaml")
+    d.add_argument("--fuentes", type=_csv, help=f"solo estas fuentes: {','.join(SOURCES)}")
+    d.add_argument("--provincias", type=_csv, help="provincia de prueba (se usa la primera)")
+    d.add_argument("--navegador", action="store_true")
+    d.add_argument("--navegador-visible", action="store_true")
+    d.add_argument("-v", "--verbose", action="store_true")
     sub.add_parser("fuentes", help="lista las fuentes disponibles")
     sub.add_parser("provincias", help="lista provincias y comunidades con su código")
     i = sub.add_parser("init", help="crea config.yaml a partir del ejemplo")
@@ -114,6 +121,32 @@ def print_summary(result) -> None:
         print(f"\nInforme: {html.resolve()}")
 
 
+def run_diagnostico(args: argparse.Namespace) -> int:
+    from .diagnose import diagnose
+    from .provinces import resolve_provinces
+
+    cfg = Config.load(args.config)
+    if args.navegador or args.navegador_visible:
+        cfg.net["navegador"] = True
+        cfg.net["navegador_visible"] = bool(args.navegador_visible)
+    try:
+        province = resolve_provinces(args.provincias or cfg.criteria.get("provincias"))[0]
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+    names = args.fuentes or cfg.enabled_sources()
+    unknown = [n for n in names if n not in SOURCES]
+    if unknown:
+        print(f"Error: fuentes desconocidas: {', '.join(unknown)}", file=sys.stderr)
+        return 2
+    print(f"Diagnóstico de {len(names)} fuentes en la provincia {province} (unos minutos)…")
+    report, archive = diagnose(cfg, names, province, cfg.output["carpeta"])
+    print(report)
+    print(f"\nTodo guardado en {archive.resolve()}\n"
+          "Si algo falla, comparte ese .zip (o el texto de arriba) para poder arreglarlo.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -155,6 +188,9 @@ def main(argv: list[str] | None = None) -> int:
         logging.getLogger("casascan").warning(
             "No existe %s: uso los valores por defecto (crea uno con: python -m casascan init)", args.config
         )
+
+    if args.cmd == "diagnostico":
+        return run_diagnostico(args)
 
     while True:
         cfg = Config.load(args.config)

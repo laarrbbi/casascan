@@ -18,6 +18,11 @@ on:
     - cron: "17 6 * * *"   # todos los días a las 06:17 UTC (08:17 en verano en España)
   workflow_dispatch:
     inputs:
+      modo:
+        description: "buscar = búsqueda normal · diagnostico = prueba cada web y guarda lo que devuelve"
+        type: choice
+        options: [buscar, diagnostico]
+        default: buscar
       fuentes:
         description: "Fuentes separadas por comas (vacío = las de config.yaml)"
         required: false
@@ -60,6 +65,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           IDEALISTA_API_KEY: ${{ secrets.IDEALISTA_API_KEY }}
           IDEALISTA_API_SECRET: ${{ secrets.IDEALISTA_API_SECRET }}
+          MODO: ${{ github.event.inputs.modo }}
           FUENTES: ${{ github.event.inputs.fuentes }}
           PROVINCIAS: ${{ github.event.inputs.provincias }}
         run: |
@@ -67,6 +73,10 @@ jobs:
           set -- -c "$CFG"
           if [ -n "$FUENTES" ]; then set -- "$@" --fuentes "$FUENTES"; fi
           if [ -n "$PROVINCIAS" ]; then set -- "$@" --provincias "$PROVINCIAS"; fi
+          if [ "$MODO" = "diagnostico" ]; then
+            python -m casascan diagnostico "$@"
+            exit 0
+          fi
           # código 1 = alguna fuente falló (p. ej. bloqueo): no es un fallo del bot
           python -m casascan buscar "$@" || [ $? -eq 1 ]
 
@@ -82,5 +92,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: informe-casascan
-          path: resultados/ultimo.*
+          path: |
+            resultados/ultimo.*
+            resultados/diagnostico_*.zip
           retention-days: 30

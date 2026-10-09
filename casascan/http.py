@@ -13,9 +13,12 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import requests
 
@@ -87,6 +90,9 @@ class HttpClient:
         self._last_request = 0.0
         self.session = self._new_session()
         self._impersonated = None
+        # Registro de peticiones (para el modo diagnóstico) y carpeta donde guardar las páginas
+        self.trace: list[dict] = []
+        self.snapshot_dir: str | None = net.get("guardar_paginas") or None
 
     # ------------------------------------------------------------------ util
     def _new_session(self) -> requests.Session:
@@ -111,6 +117,21 @@ class HttpClient:
         if elapsed < target:
             time.sleep(target - elapsed)
         self._last_request = time.monotonic()
+
+    def _record(self, method: str, url: str, status: int, content: bytes = b"", error: str = "") -> None:
+        entry: dict[str, Any] = {"method": method, "url": url, "status": status, "bytes": len(content)}
+        if error:
+            entry["error"] = error
+        if self.snapshot_dir and content:
+            folder = Path(self.snapshot_dir)
+            folder.mkdir(parents=True, exist_ok=True)
+            parts = urlsplit(url)
+            stem = re.sub(r"[^a-zA-Z0-9]+", "_", f"{parts.netloc}{parts.path}").strip("_")[:70]
+            ext = "json" if content.lstrip()[:1] in (b"{", b"[") else "html"
+            name = f"{len(self.trace) + 1:03d}_{stem}.{ext}"
+            (folder / name).write_bytes(content)
+            entry["file"] = name
+        self.trace.append(entry)
 
     def _impersonating_session(self):
         """Sesión de curl_cffi que imita a Chrome (si está instalado)."""
@@ -156,6 +177,8 @@ class HttpClient:
             except Exception as exc:  # requests y curl_cffi lanzan excepciones distintas
                 last_exc = exc
                 log.warning("Error de red en %s (intento %d/%d): %s", url, attempt, self.retries, exc)
+                if attempt == self.retries:
+                    self._record(method, url, 0, error=f"{type(exc).__name__}: {str(exc)[:200]}")
                 time.sleep(3 * attempt)
                 continue
             resp = Response(
@@ -165,6 +188,7 @@ class HttpClient:
                 headers={k.lower(): v for k, v in r.headers.items()},
                 encoding=encoding or _guess_encoding(r),
             )
+            self._record(method, resp.url, resp.status, resp.content)
             if check_block and looks_blocked(resp.status, resp.text):
                 raise BlockedError(
                     f"{url} ha respondido con una página de bloqueo/captcha (HTTP {resp.status})."
@@ -198,6 +222,7 @@ class HttpClient:
             self._browser = BrowserFetcher(self.browser_profile, headless=not self.browser_visible)
         self._wait()
         html = self._browser.get(url, wait_selector=wait_selector, timeout=self.timeout)
+        self._record("BROWSER", url, 200, html.encode("utf-8"))
         if looks_blocked(200, html):
             raise BlockedError(
                 f"{url} pide captcha incluso con navegador. Ejecuta con navegador visible "
