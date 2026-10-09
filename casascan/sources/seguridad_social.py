@@ -53,7 +53,7 @@ def _column_map(table) -> dict[str, int]:
             if key in h:  # cada cabecera se asigna al primer dato que encaja
                 cols.setdefault(field, i)
                 break
-    if len(cols) < 3:
+    if not {"tasacion", "valor"} <= cols.keys():  # cabeceras no reconocibles: posiciones conocidas
         return dict(_DEFAULT_COLS)
     cols.setdefault("nombre", 0)
     return cols

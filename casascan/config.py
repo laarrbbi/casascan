@@ -64,9 +64,9 @@ DEFAULTS: dict[str, Any] = {
         "solo_nuevos": False,
         "base_datos": "casascan.db",
     },
-    "enriquecer_catastro": False,
+    "enriquecer_catastro": True,
     "notificaciones": {
-        "telegram": {"activo": False, "token": "${TELEGRAM_TOKEN}", "chat_id": "${TELEGRAM_CHAT_ID}"},
+        "telegram": {"activo": "auto", "token": "${TELEGRAM_TOKEN}", "chat_id": "${TELEGRAM_CHAT_ID}"},
     },
 }
 

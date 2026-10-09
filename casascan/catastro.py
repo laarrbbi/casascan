@@ -53,8 +53,10 @@ def parse_dnprc(xml_text: str) -> dict:
 
 
 def enrich(items: list[Listing], http: HttpClient) -> None:
+    """Consulta el Catastro solo para los resultados con referencia catastral a los que
+    les falta la superficie (una petición por inmueble)."""
     for it in items:
-        if not it.cadastral_ref or it.extra.get("catastro"):
+        if not it.cadastral_ref or it.surface_m2 or it.extra.get("catastro"):
             continue
         try:
             r = http.get(DNPRC, params={"Provincia": "", "Municipio": "", "RC": it.cadastral_ref}, check_block=False)

@@ -6,7 +6,6 @@ venv/
 .pytest_cache/
 .ruff_cache/
 # datos locales del bot
-config.yaml
 casascan.db
 resultados/
 .casascan_navegador/

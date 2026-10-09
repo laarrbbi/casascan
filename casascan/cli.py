@@ -14,6 +14,7 @@ import logging
 import shutil
 import sys
 import time
+import webbrowser
 from pathlib import Path
 
 from .config import Config
@@ -51,6 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--navegador", action="store_true", help="usar Chromium real (Playwright) para webs con anti-bot")
         sp.add_argument("--navegador-visible", action="store_true", help="como --navegador pero con ventana visible")
         sp.add_argument("--solo-nuevos", action="store_true", help="el informe solo incluye novedades")
+        sp.add_argument("--abrir", action="store_true", help="abrir el informe en el navegador al terminar")
         sp.add_argument("-v", "--verbose", action="store_true")
 
     common(sub.add_parser("buscar", help="ejecuta una búsqueda en todas las fuentes"))
@@ -163,6 +165,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Error: {exc}", file=sys.stderr)
             return 2
         print_summary(result)
+        if args.abrir and args.cmd == "buscar":
+            report = next((f for f in result.files if f.name == "ultimo.html"), None)
+            if report:
+                webbrowser.open(report.resolve().as_uri())
         if args.cmd != "vigilar" or result.interrupted:
             return 0 if not result.errors else 1
         print(f"\nPróxima búsqueda en {args.cada:.0f} minutos (Ctrl+C para salir)…")

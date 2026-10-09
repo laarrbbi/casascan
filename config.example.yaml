@@ -94,10 +94,10 @@ salida:
   solo_nuevos: false         # true = el informe solo trae novedades y bajadas de precio
   base_datos: casascan.db    # memoria del bot para detectar novedades
 
-enriquecer_catastro: false   # completar m²/uso/año con el Catastro cuando haya referencia catastral
+enriquecer_catastro: true    # si falta la superficie y hay referencia catastral, la pide al Catastro
 
 notificaciones:
   telegram:
-    activo: false
+    activo: auto                   # auto = se activa si hay token y chat id; true / false
     token: ${TELEGRAM_TOKEN}       # de @BotFather
     chat_id: ${TELEGRAM_CHAT_ID}

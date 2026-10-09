@@ -101,3 +101,22 @@ def test_runner(tmp_path, monkeypatch):
     # segunda ejecución: ya no es nuevo
     res2 = runner.run(cfg, ["dummy"])
     assert not res2.items[0].is_new and res2.new_items == []
+
+
+def test_telegram_auto_only_with_credentials(tmp_path, monkeypatch):
+    sent = []
+    monkeypatch.setattr(runner, "send_telegram", lambda items, token, chat: sent.append((len(items), token, chat)) or 1)
+    monkeypatch.setitem(runner.SOURCES, "dummy", DummySource)
+    base = {
+        "criterios": {"provincias": ["28"], "precio_max": 200000},
+        "red": {"pausa_min": 0, "pausa_max": 0},
+        "salida": {"carpeta": str(tmp_path / "o"), "formatos": ["json"]},
+    }
+    monkeypatch.delenv("TELEGRAM_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    runner.run(Config({**base, "salida": {**base["salida"], "base_datos": str(tmp_path / "a.db")}}), ["dummy"])
+    assert sent == []  # 'auto' sin token: no se envía nada
+    monkeypatch.setenv("TELEGRAM_TOKEN", "T")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "42")
+    runner.run(Config({**base, "salida": {**base["salida"], "base_datos": str(tmp_path / "b.db")}}), ["dummy"])
+    assert sent == [(1, "T", "42")]

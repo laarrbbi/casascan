@@ -21,7 +21,15 @@ si quieres, te lo manda por **Telegram**.
 
 ## Instalación
 
-Necesitas Python 3.10 o superior.
+Necesitas Python 3.10 o superior (en Windows, instálalo desde python.org
+marcando "Add Python to PATH").
+
+**La forma fácil:** descarga el proyecto y haz doble clic en **`buscar.bat`**
+(Windows) o ejecuta **`./buscar.sh`** (Linux/macOS). La primera vez prepara todo
+solo, crea `config.yaml`, busca y abre el informe en el navegador. Después edita
+`config.yaml` con tus criterios y vuelve a lanzarlo.
+
+**A mano:**
 
 ```bash
 git clone https://github.com/laarrbbi/casascan.git
@@ -43,7 +51,7 @@ python -m casascan buscar          # recorre todas las fuentes y genera el infor
 ```
 
 Al terminar verás un resumen por fuente y la ruta del informe
-(`resultados/ultimo.html`). Ábrelo en el navegador.
+(`resultados/ultimo.html`). Añade `--abrir` para que se abra solo en el navegador.
 
 Puedes cambiar criterios desde la línea de comandos sin tocar `config.yaml`:
 
@@ -132,11 +140,36 @@ Lo que sí hace CasaScan para enterarte **antes** de la subasta:
 - **Subastas en "Próxima apertura"** del Portal del BOE: ya anunciadas pero aún
   sin pujas.
 - Para cada subasta con **referencia catastral**, el informe enlaza a la ficha
-  del **Catastro** y, con `enriquecer_catastro: true`, completa m², uso y año de
-  construcción. Con esa referencia (y el IDUFIR, si la ficha del BOE lo trae) puedes
+  del **Catastro** y, si la ficha no dice los m², los pide al Catastro
+  (`enriquecer_catastro`, activado por defecto). Con esa referencia (y el IDUFIR, si la ficha del BOE lo trae) puedes
   pedir la nota simple del inmueble que te interese.
 
 ## Ejecutarlo solo cada día
+
+### En la nube con GitHub (sin dejar tu ordenador encendido)
+
+El repositorio trae el flujo `.github/workflows/bot.yml`, que busca **todos los
+días** en los servidores de GitHub (gratis) y te avisa por Telegram:
+
+1. Sube tu `config.yaml` al repositorio (si no, usa `config.example.yaml`). No
+   pongas tokens dentro: van en los secretos del paso 2.
+2. En GitHub → *Settings → Secrets and variables → Actions* crea los secretos
+   `TELEGRAM_TOKEN` y `TELEGRAM_CHAT_ID` (y, si la tienes, `IDEALISTA_API_KEY` /
+   `IDEALISTA_API_SECRET`).
+3. Para activar la ejecución diaria (8:17, hora de verano en España), crea en la
+   pestaña *Variables* de esa misma pantalla la variable `CASASCAN_ACTIVO` con
+   valor `true`. Sin ella el bot solo se ejecuta cuando lo lanzas a mano desde
+   *Actions → bot → Run workflow*.
+   El informe completo queda en *Artifacts* de cada ejecución y el bot recuerda
+   lo que ya te avisó.
+
+Las ejecuciones programadas usan la rama por defecto del repositorio. Los
+servidores de GitHub no están en España: el BOE funciona desde ellos, pero
+Idealista y Fotocasa suelen bloquearlos. Para esos dos, mejor en tu ordenador.
+Ojo: si el repositorio es público, cualquiera puede ver tu `config.yaml` y los
+informes de *Actions*.
+
+### En tu ordenador
 
 - **Modo vigilar**: `python -m casascan vigilar --cada 360` (deja la terminal abierta).
 - **Linux/macOS (cron)**, todos los días a las 8:00:
@@ -151,8 +184,9 @@ Lo que sí hace CasaScan para enterarte **antes** de la subasta:
 1. Habla con **@BotFather** en Telegram → `/newbot` → copia el *token*.
 2. Escribe algo a tu bot y abre `https://api.telegram.org/bot<TOKEN>/getUpdates`
    para ver tu `chat id`.
-3. Define `TELEGRAM_TOKEN` y `TELEGRAM_CHAT_ID` (o ponlos en `config.yaml`) y
-   activa `notificaciones.telegram.activo: true`.
+3. Define las variables `TELEGRAM_TOKEN` y `TELEGRAM_CHAT_ID` (o los secretos de
+   GitHub). Con eso basta: `notificaciones.telegram.activo: auto` envía los avisos
+   en cuanto existen.
 
 Recibirás solo lo nuevo y las bajadas de precio.
 
@@ -171,6 +205,11 @@ Recibirás solo lo nuevo y las bajadas de precio.
 - Los extractores de **BOE** y **Seguridad Social** siguen la estructura de esas
   webs tal como la documentan scrapers públicos que funcionan contra ellas
   (formularios `subastas_ava.php` / `SubaSeControladorInter`).
+- En las subastas, los m² y los dormitorios se sacan del texto de la ficha,
+  también cuando vienen en letra ("ochenta y cinco metros y cincuenta
+  decímetros cuadrados", "tres dormitorios"). Probado con 2.800 fichas reales del
+  BOE: se obtiene la superficie de algo más de la mitad de las viviendas; el resto
+  no la menciona y se completa con el Catastro cuando hay referencia catastral.
 - **Aliseda** y **Servihabitat** no publican un formato estable: se usa un
   extractor genérico (JSON-LD, JSON incrustado y tarjetas HTML). Si en tu
   provincia no saca nada, pega la URL de tu búsqueda en `urls`.

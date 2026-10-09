@@ -101,7 +101,10 @@ def run(config: Config, only_sources: list[str] | None = None, limit: int | None
     )
 
     tg = config.data.get("notificaciones", {}).get("telegram", {})
-    if tg.get("activo") and result.new_items:
+    active = tg.get("activo")
+    if str(active).lower() == "auto":  # se activa solo si hay token y chat id
+        active = bool(tg.get("token") and tg.get("chat_id"))
+    if active is True and result.new_items:
         n = send_telegram(result.new_items, tg.get("token", ""), str(tg.get("chat_id", "")))
         log.info("Telegram: %d mensajes enviados", n)
     return result

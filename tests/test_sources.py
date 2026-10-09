@@ -213,3 +213,9 @@ def test_parse_dnprc():
     d = parse_dnprc(load("catastro_dnprc.xml"))
     assert d["uso"] == "Residencial" and d["superficie_m2"] == 85.0 and d["anio_construccion"] == 1985
     assert parse_dnprc("no xml") == {}
+
+
+def test_ss_listing_without_headers_uses_known_positions():
+    html = load("ss_listado.html").replace("<thead>", "<!--").replace("</thead>", "-->")
+    first = parse_listing_page(html)[0]
+    assert first["tasacion"] == 150000.0 and first["valor"] == 140000.0 and first["fecha"] == "15/11/2026 10:00"

@@ -58,3 +58,32 @@ def test_provinces():
     assert "alacant" in province_slugs("03")
     with pytest.raises(ValueError):
         resolve_provinces(["Atlántida"])
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        # frases reales de fichas del BOE
+        ("Tiene una superficie construida de noventa y nueve metros y treinta y cinco decímetros cuadrados", 99.35),
+        ("Ocupa una superficie construida de ochenta y cinco metros, sesenta y dos decímetros, todos cuadrados", 85.62),
+        ("Tiene una superficie construida de ciento veintinuevo metros y setenta y nueve decimetros", 129.79),
+        ("de una superficie de treinta y cinco metros. Linda: Izquierda y fondo", 35.0),
+        ("SUPERFICIE TERRENO: CIENTO DOCE METROS CUADRADOS. CONSTRUIDA: NOVENTA Y SIETE METROS CUADRADOS", 97.0),
+        ("una superficie edificada de ochenta seis metros treinta y tres decímetros cuadrados", 86.33),
+        ("finca de dos mil quinientos metros cuadrados", 2500.0),
+        ("DE DOCE METROS DE FRENTE A LA CALLE LARACHE, POR DOCE Y MEDIO DE FONDO", None),
+        ("situada a ciento cincuenta metros de la playa", None),
+    ],
+)
+def test_parse_m2_spanish_words(text, expected):
+    assert parse_m2(text) == expected
+
+
+def test_rooms_and_baths_in_words():
+    from casascan.textutil import parse_baths
+
+    assert parse_rooms("distribuida en vestíbulo, tres dormitorios, cocina y un baño") == 3
+    assert parse_baths("distribuida en vestíbulo, tres dormitorios, cocina y un baño") == 1
+    assert parse_baths("salón, cocina y un cuarto de baño") == 1
+    assert parse_rooms("Piso de 2 habitaciones") == 2
+    assert parse_rooms("Vivienda en planta 3") is None
