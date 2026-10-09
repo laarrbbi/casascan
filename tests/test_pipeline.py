@@ -120,3 +120,25 @@ def test_telegram_auto_only_with_credentials(tmp_path, monkeypatch):
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "42")
     runner.run(Config({**base, "salida": {**base["salida"], "base_datos": str(tmp_path / "b.db")}}), ["dummy"])
     assert sent == [(1, "T", "42")]
+
+
+def test_runner_stop_button(tmp_path, monkeypatch):
+    from casascan.storage import Storage
+
+    monkeypatch.setitem(runner.SOURCES, "dummy", DummySource)
+    db = str(tmp_path / "s.db")
+    cfg = Config({
+        "criterios": {"provincias": ["28"]},
+        "red": {"pausa_min": 0, "pausa_max": 0},
+        "salida": {"carpeta": str(tmp_path / "o"), "base_datos": db, "formatos": ["json"]},
+    })
+    seen = []
+
+    def stop_after_first():
+        seen.append(1)
+        return len(seen) > 2  # deja pasar el primer resultado y luego para
+
+    res = runner.run(cfg, ["dummy"], should_stop=stop_after_first)
+    assert res.interrupted and [i.id for i in res.items] == ["a"]
+    run = Storage(db).runs(1)[0]
+    assert run["status"] == "interrumpida" and run["found"] == 1

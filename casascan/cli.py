@@ -66,6 +66,17 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--navegador", action="store_true")
     d.add_argument("--navegador-visible", action="store_true")
     d.add_argument("-v", "--verbose", action="store_true")
+    web = sub.add_parser("web", help="abre la plataforma web (http://127.0.0.1:8000)")
+    web.add_argument("-c", "--config", default="config.yaml")
+    web.add_argument("--host", default="127.0.0.1", help="0.0.0.0 para entrar desde otros equipos (pide contraseña)")
+    web.add_argument("--puerto", type=int, default=8000)
+    web.add_argument("--no-abrir", action="store_true", help="no abrir el navegador")
+    web.add_argument("--sin-clave", action="store_true",
+                     help="permitir acceso desde otros equipos sin contraseña (no recomendado)")
+    web.add_argument("-v", "--verbose", action="store_true")
+    ex = sub.add_parser("exportar-web", help="genera la web estática de solo lectura (GitHub Pages)")
+    ex.add_argument("-c", "--config", default="config.yaml")
+    ex.add_argument("--salida", default="web_publica")
     sub.add_parser("fuentes", help="lista las fuentes disponibles")
     sub.add_parser("provincias", help="lista provincias y comunidades con su código")
     i = sub.add_parser("init", help="crea config.yaml a partir del ejemplo")
@@ -121,6 +132,36 @@ def print_summary(result) -> None:
         print(f"\nInforme: {html.resolve()}")
 
 
+def run_web(args: argparse.Namespace) -> int:
+    import os
+    import threading
+
+    from .web import create_app
+
+    password = os.environ.get("CASASCAN_PASSWORD", "")
+    local = args.host in ("127.0.0.1", "localhost", "::1")
+    if not local and not password and not args.sin_clave:
+        print(
+            "Para abrir la plataforma a otros equipos define una contraseña en la variable "
+            "CASASCAN_PASSWORD (o usa --sin-clave bajo tu responsabilidad).",
+            file=sys.stderr,
+        )
+        return 2
+    app = create_app(args.config, password=password, allow_any_host=bool(args.sin_clave))
+    url = f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '::') else args.host}:{args.puerto}/"
+    print(f"CasaScan está en {url}  (Ctrl+C para cerrar)")
+    if not args.no_abrir:
+        threading.Timer(1.2, lambda: webbrowser.open(url)).start()
+    try:
+        from waitress import serve  # type: ignore
+    except ImportError:
+        logging.getLogger("werkzeug").setLevel(logging.WARNING)
+        app.run(host=args.host, port=args.puerto, threaded=True, use_reloader=False)
+    else:
+        serve(app, host=args.host, port=args.puerto, threads=8)
+    return 0
+
+
 def run_diagnostico(args: argparse.Namespace) -> int:
     from .diagnose import diagnose
     from .provinces import resolve_provinces
@@ -140,7 +181,7 @@ def run_diagnostico(args: argparse.Namespace) -> int:
         print(f"Error: fuentes desconocidas: {', '.join(unknown)}", file=sys.stderr)
         return 2
     print(f"Diagnóstico de {len(names)} fuentes en la provincia {province} (unos minutos)…")
-    report, archive = diagnose(cfg, names, province, cfg.output["carpeta"])
+    report, archive, _ = diagnose(cfg, names, province, cfg.output["carpeta"])
     print(report)
     print(f"\nTodo guardado en {archive.resolve()}\n"
           "Si algo falla, comparte ese .zip (o el texto de arriba) para poder arreglarlo.")
@@ -178,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
+        level=logging.DEBUG if getattr(args, "verbose", False) else logging.INFO,
         format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
         datefmt="%H:%M:%S",
     )
@@ -191,6 +232,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "diagnostico":
         return run_diagnostico(args)
+    if args.cmd == "web":
+        return run_web(args)
+    if args.cmd == "exportar-web":
+        from .web.export import export_static
+
+        out = export_static(Config.load(args.config), args.salida)
+        print(f"Web estática generada en {out.resolve()} (ábrela con un servidor web o súbela a GitHub Pages)")
+        return 0
 
     while True:
         cfg = Config.load(args.config)

@@ -14,10 +14,68 @@ saca, según **tus criterios**, todo lo que hay:
 | 7 | **Antes de la subasta** | Anuncios y edictos en el BOE: ventas extrajudiciales por impago de hipoteca, ejecuciones hipotecarias, embargos, apremios… | API oficial de datos abiertos del BOE |
 
 Todo se filtra con los mismos criterios (provincia, localidad, tipo, precio,
-m², habitaciones, % por debajo de tasación, palabras clave…) y sale en un
-**informe HTML** (tabla con filtros), **CSV** (Excel) y **JSON**. El bot tiene
-memoria: marca lo **NUEVO** y las **BAJADAS DE PRECIO** desde la última vez y,
-si quieres, te lo manda por **Telegram**.
+m², habitaciones, % por debajo de tasación, palabras clave…) y se consulta en la
+**plataforma web** o en informes **HTML**, **CSV** (Excel) y **JSON**. El bot
+tiene memoria: marca lo **NUEVO**, las **BAJADAS DE PRECIO** y lo que ya no
+aparece, y si quieres te avisa por **Telegram**.
+
+## La plataforma
+
+![Plataforma CasaScan con datos de ejemplo](docs/plataforma.png)
+
+*(Captura con datos de ejemplo.)*
+
+Ábrela con doble clic en **`plataforma.bat`** (Windows), con **`./plataforma.sh`**
+(Linux/macOS) o con `python -m casascan web`. Se abre sola en el navegador, en
+<http://127.0.0.1:8000>.
+
+- **Resultados**: todo lo que ha encontrado el bot, con filtros (fuente; en venta,
+  subasta o pre-subasta; provincia; precio; m²; habitaciones; % bajo tasación;
+  solo nuevos; bajadas de precio) y orden (recientes, precio, €/m², descuento,
+  subastas que cierran antes). Cada ficha de subasta muestra valor, tasación,
+  puja mínima, depósito, fecha de cierre y situación posesoria, con enlaces a la
+  ficha oficial, al mapa y al Catastro.
+- **Seguimiento**: guarda inmuebles con la estrella, añade notas y llévalos de
+  favorito a contactado y visitado (o descártalos para no verlos más).
+- **Criterios**: provincias por comunidad, tipo de inmueble, precios, superficie,
+  habitaciones, palabras clave y qué webs recorrer (con tus propias URLs de
+  búsqueda si quieres).
+- **Actividad**: lanza una búsqueda y síguela en directo, detenla si hace falta,
+  consulta el historial y diagnostica las webs.
+- **Ajustes**: búsqueda automática cada 3/6/12/24 h, avisos de Telegram con botón
+  de prueba y navegador real para Idealista y Fotocasa.
+
+Funciona también en el móvil. Para entrar desde otro dispositivo de tu casa,
+arráncala con contraseña:
+
+```bash
+CASASCAN_PASSWORD=tu-clave python -m casascan web --host 0.0.0.0
+# y abre http://IP-DE-TU-ORDENADOR:8000 (usuario cualquiera, contraseña tu-clave)
+```
+
+Sin contraseña la plataforma solo acepta conexiones de tu propio ordenador.
+
+### En un servidor (siempre encendida)
+
+Con Docker, por ejemplo en un VPS en España (las webs españolas bloquean menos
+las IP españolas):
+
+```bash
+docker build -t casascan .
+docker run -d --name casascan -p 8000:8000 -e CASASCAN_PASSWORD=tu-clave -v casascan:/data casascan
+```
+
+Los criterios, la memoria y los informes se guardan en el volumen `casascan`.
+Pon la búsqueda automática en *Ajustes* y ya no hay que hacer nada más.
+
+### Versión pública de solo lectura (GitHub Pages)
+
+El bot de GitHub (ver más abajo) puede publicar además una copia de la
+plataforma, sin botones de búsqueda ni criterios, con lo encontrado en cada
+ejecución. Activa *Settings → Pages → Source: GitHub Actions* y crea la variable
+de repositorio `CASASCAN_WEB = true`. Las notas y marcas privadas no se publican;
+quien la visite guarda sus favoritos solo en su navegador. También se genera a
+mano con `python -m casascan exportar-web`.
 
 ## Instalación
 
@@ -246,6 +304,11 @@ casascan/
   notify.py         Telegram
   catastro.py       enriquecimiento con el Catastro
   diagnose.py       modo diagnóstico (prueba cada web y guarda sus páginas)
+  web/
+    app.py          plataforma web (Flask): API JSON y programador de búsquedas
+    jobs.py         búsquedas en segundo plano con log en directo
+    export.py       versión estática de solo lectura (GitHub Pages)
+    static/         interfaz (HTML, CSS y JavaScript sin dependencias)
   sources/
     boe.py              Portal de Subastas del BOE
     seguridad_social.py Subastas TGSS

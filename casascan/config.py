@@ -93,6 +93,22 @@ def deep_merge(base: dict, override: dict) -> dict:
     return out
 
 
+def load_raw(path: str | Path | None) -> dict:
+    """config.yaml tal cual (sin valores por defecto ni variables de entorno expandidas)."""
+    if path and Path(path).exists():
+        with open(path, encoding="utf-8") as fh:
+            return yaml.safe_load(fh) or {}
+    return {}
+
+
+def save_raw(path: str | Path, data: dict) -> None:
+    Path(path).write_text(
+        "# Configuración de CasaScan (editada desde la plataforma)\n"
+        + yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
 class Config:
     def __init__(self, data: dict | None = None):
         self.data = _expand_env(deep_merge(DEFAULTS, data or {}))

@@ -54,18 +54,20 @@ def send_telegram(items: list[Listing], token: str, chat_id: str) -> int:
             current = ""
         current += "\n" + b + "\n"
     messages.append(current)
-    sent = 0
-    for msg in messages:
-        try:
-            r = requests.post(
-                f"https://api.telegram.org/bot{token}/sendMessage",
-                data={"chat_id": chat_id, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": "true"},
-                timeout=30,
-            )
-            if r.ok:
-                sent += 1
-            else:
-                log.warning("Telegram respondió %s: %s", r.status_code, r.text[:200])
-        except requests.RequestException as exc:
-            log.warning("No se pudo enviar a Telegram: %s", exc)
-    return sent
+    return sum(1 for msg in messages if send_text(msg, token, chat_id))
+
+
+def send_text(text: str, token: str, chat_id: str) -> bool:
+    """Envía un mensaje (HTML de Telegram). Devuelve True si se entregó."""
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": "true"},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        log.warning("No se pudo enviar a Telegram: %s", exc)
+        return False
+    if not r.ok:
+        log.warning("Telegram respondió %s: %s", r.status_code, r.text[:200])
+    return r.ok

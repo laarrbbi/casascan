@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CasaScan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="static/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='3' fill='%231D5C7A'/%3E%3Cpath d='M9 22V13l7-5 7 5v9z' fill='%23E7C873'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="3"/><path d="M9 22V13l7-5 7 5v9z"/></svg>
+    <span class="brand-name">CasaScan</span>
+  </div>
+  <div class="status" id="status" aria-live="polite">Cargando…</div>
+  <div class="top-actions">
+    <button class="btn btn-primary" id="btn-run" type="button">Buscar ahora</button>
+    <button class="btn btn-ghost" id="btn-stop" type="button" hidden>Detener</button>
+  </div>
+</header>
+
+<div class="banner" id="static-banner" hidden></div>
+
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button role="tab" class="tab" data-view="resultados" aria-selected="true" id="tab-resultados">Resultados</button>
+  <button role="tab" class="tab" data-view="seguimiento" aria-selected="false" id="tab-seguimiento">Seguimiento <span class="tab-count" id="count-seguimiento"></span></button>
+  <button role="tab" class="tab server-only" data-view="criterios" aria-selected="false" id="tab-criterios">Criterios</button>
+  <button role="tab" class="tab" data-view="actividad" aria-selected="false" id="tab-actividad">Actividad</button>
+  <button role="tab" class="tab server-only" data-view="ajustes" aria-selected="false" id="tab-ajustes">Ajustes</button>
+</nav>
+
+<main class="page">
+  <!-- ─────────────── Resultados ─────────────── -->
+  <section class="view" id="view-resultados" role="tabpanel" aria-labelledby="tab-resultados">
+    <div class="kpis" id="kpis"></div>
+    <div class="results-layout">
+      <aside class="filters" id="filters" aria-label="Filtros">
+        <div class="filters-head">
+          <h2>Filtros</h2>
+          <button type="button" class="link" id="f-reset">Limpiar</button>
+        </div>
+        <label class="field"><span>Buscar</span><input id="f-q" type="search" placeholder="Calle, localidad, expediente…"></label>
+        <fieldset class="field"><legend>Qué</legend><div class="seg" id="f-kind"></div></fieldset>
+        <fieldset class="field"><legend>Fuente</legend><div class="chips" id="f-source"></div></fieldset>
+        <label class="field"><span>Provincia</span><select id="f-prov"><option value="">Todas</option></select></label>
+        <label class="field"><span>Inmueble</span><select id="f-type"><option value="">Todos</option></select></label>
+        <div class="field-row">
+          <label class="field"><span>Precio desde</span><input id="f-pmin" type="number" inputmode="numeric" min="0" step="1000" placeholder="€"></label>
+          <label class="field"><span>hasta</span><input id="f-pmax" type="number" inputmode="numeric" min="0" step="1000" placeholder="€"></label>
+        </div>
+        <div class="field-row">
+          <label class="field"><span>m² mín.</span><input id="f-m2" type="number" inputmode="numeric" min="0"></label>
+          <label class="field"><span>Hab. mín.</span><input id="f-rooms" type="number" inputmode="numeric" min="0" max="10"></label>
+        </div>
+        <label class="field"><span>Bajo tasación, mín. %</span><input id="f-disc" type="number" inputmode="numeric" min="0" max="100" placeholder="solo subastas"></label>
+        <div class="checks">
+          <label><input type="checkbox" id="f-new"> Solo nuevos</label>
+          <label><input type="checkbox" id="f-drop"> Solo bajadas de precio</label>
+          <label><input type="checkbox" id="f-hide-discarded" checked> Ocultar descartados</label>
+          <label><input type="checkbox" id="f-old"> Incluir los que ya no aparecen</label>
+        </div>
+      </aside>
+      <div class="results">
+        <div class="results-bar">
+          <button type="button" class="btn btn-ghost filters-toggle" id="filters-toggle" aria-controls="filters" aria-expanded="false">Filtros</button>
+          <p class="results-count" id="results-count"></p>
+          <label class="sort"><span>Ordenar</span>
+            <select id="f-sort">
+              <option value="recientes">Más recientes</option>
+              <option value="precio">Precio más bajo</option>
+              <option value="eurm2">€/m² más bajo</option>
+              <option value="descuento">Mayor descuento</option>
+              <option value="cierre">Subastas que cierran antes</option>
+            </select>
+          </label>
+        </div>
+        <ol class="fichas" id="list"></ol>
+        <button type="button" class="btn btn-ghost more" id="more" hidden>Ver más</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── Seguimiento ─────────────── -->
+  <section class="view" id="view-seguimiento" role="tabpanel" aria-labelledby="tab-seguimiento" hidden>
+    <div class="view-head">
+      <h1>Seguimiento</h1>
+      <p class="muted">Los inmuebles que has marcado, con tus notas. Úsalo como lista de trabajo: favorito → contactado → visitado.</p>
+    </div>
+    <div class="seg" id="track-filter"></div>
+    <ol class="fichas" id="track-list"></ol>
+  </section>
+
+  <!-- ─────────────── Criterios ─────────────── -->
+  <section class="view" id="view-criterios" role="tabpanel" aria-labelledby="tab-criterios" hidden>
+    <form id="criteria-form" class="form" novalidate>
+      <div class="view-head">
+        <h1>Qué buscas</h1>
+        <p class="muted">El bot aplica estos criterios en todas las webs. Si a un anuncio le falta un dato (por ejemplo los m² de una subasta), se mantiene salvo que actives el modo estricto.</p>
+      </div>
+
+      <section class="panel">
+        <h2>Dónde</h2>
+        <div class="prov-grid" id="c-prov"></div>
+        <label class="field"><span>Localidades (opcional, separadas por comas)</span><input id="c-loc" type="text" placeholder="Getafe, Leganés"></label>
+        <label class="field"><span>Códigos postales (opcional)</span><input id="c-cp" type="text" placeholder="28901, 28902"></label>
+      </section>
+
+      <section class="panel">
+        <h2>Qué inmueble</h2>
+        <div class="chips" id="c-types"></div>
+        <div class="field-grid">
+          <label class="field"><span>Precio mínimo (€)</span><input id="c-pmin" type="number" min="0" step="1000"></label>
+          <label class="field"><span>Precio máximo (€)</span><input id="c-pmax" type="number" min="0" step="1000"></label>
+          <label class="field"><span>Superficie mínima (m²)</span><input id="c-smin" type="number" min="0"></label>
+          <label class="field"><span>Superficie máxima (m²)</span><input id="c-smax" type="number" min="0"></label>
+          <label class="field"><span>Habitaciones mínimas</span><input id="c-rooms" type="number" min="0" max="10"></label>
+          <label class="field"><span>Subastas: % mínimo bajo tasación</span><input id="c-disc" type="number" min="0" max="100"></label>
+        </div>
+        <label class="field"><span>Debe contener alguna de estas palabras (opcional)</span><input id="c-kw" type="text" placeholder="terraza, ascensor"></label>
+        <label class="field"><span>Descartar si contiene</span><textarea id="c-excl" rows="2"></textarea></label>
+        <label class="check"><input type="checkbox" id="c-strict"> Modo estricto: descartar si falta algún dato del criterio</label>
+      </section>
+
+      <section class="panel">
+        <h2>En qué webs</h2>
+        <div class="sources" id="c-sources"></div>
+      </section>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Guardar criterios</button>
+        <button class="btn btn-ghost" type="button" id="save-run">Guardar y buscar ahora</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ─────────────── Actividad ─────────────── -->
+  <section class="view" id="view-actividad" role="tabpanel" aria-labelledby="tab-actividad" hidden>
+    <div class="view-head">
+      <h1>Actividad</h1>
+      <p class="muted" id="activity-intro">Cada búsqueda recorre las webs una a una, con pausas para no saturarlas. Las subastas ya leídas se guardan, así que las siguientes búsquedas van más rápido.</p>
+    </div>
+    <section class="panel server-only">
+      <div class="panel-head">
+        <h2>Progreso</h2>
+        <div class="panel-actions">
+          <button class="btn btn-ghost" type="button" id="btn-diag">Diagnosticar las webs</button>
+        </div>
+      </div>
+      <p class="muted" id="job-state">No hay ninguna búsqueda en marcha.</p>
+      <pre class="log" id="job-log" aria-live="polite"></pre>
+    </section>
+    <section class="panel" id="diag-panel" hidden>
+      <h2>Diagnóstico</h2>
+      <p class="muted" id="diag-intro"></p>
+      <pre class="log" id="diag-text"></pre>
+    </section>
+    <section class="panel">
+      <h2>Historial</h2>
+      <div class="table-wrap"><table class="runs" id="runs"></table></div>
+    </section>
+  </section>
+
+  <!-- ─────────────── Ajustes ─────────────── -->
+  <section class="view" id="view-ajustes" role="tabpanel" aria-labelledby="tab-ajustes" hidden>
+    <form id="settings-form" class="form" novalidate>
+      <div class="view-head"><h1>Ajustes</h1></div>
+      <section class="panel">
+        <h2>Búsqueda automática</h2>
+        <label class="field"><span>Buscar solo cada</span>
+          <select id="s-auto">
+            <option value="0">Nunca (solo cuando pulse Buscar ahora)</option>
+            <option value="3">3 horas</option>
+            <option value="6">6 horas</option>
+            <option value="12">12 horas</option>
+            <option value="24">24 horas</option>
+          </select>
+        </label>
+        <p class="muted small">Funciona mientras la plataforma esté abierta en este ordenador. Para que busque aunque esté apagado, usa el bot de GitHub (ver README).</p>
+      </section>
+      <section class="panel">
+        <h2>Avisos por Telegram</h2>
+        <p class="muted small">Crea un bot con @BotFather, copia su token y escribe a tu bot para obtener tu chat id. Recibirás lo nuevo y las bajadas de precio.</p>
+        <div class="field-grid">
+          <label class="field"><span>Avisos</span>
+            <select id="s-tg-on"><option value="auto">Activados si hay token y chat id</option><option value="true">Siempre</option><option value="false">Desactivados</option></select>
+          </label>
+          <label class="field"><span>Token del bot</span><input id="s-tg-token" type="password" autocomplete="off" placeholder="123456:ABC…"></label>
+          <label class="field"><span>Chat id</span><input id="s-tg-chat" type="text" inputmode="numeric"></label>
+        </div>
+        <button class="btn btn-ghost" type="button" id="tg-test">Enviar mensaje de prueba</button>
+      </section>
+      <section class="panel">
+        <h2>Conexión con las webs</h2>
+        <label class="check"><input type="checkbox" id="s-browser"> Usar un navegador real (Chromium) para Idealista y Fotocasa</label>
+        <label class="check"><input type="checkbox" id="s-browser-visible"> Mostrar la ventana del navegador (para resolver un captcha a mano)</label>
+        <label class="check"><input type="checkbox" id="s-catastro"> Completar los m² con el Catastro cuando falten</label>
+        <div class="field-grid">
+          <label class="field"><span>Pausa mínima entre peticiones (s)</span><input id="s-pmin" type="number" min="0.5" step="0.5"></label>
+          <label class="field"><span>Pausa máxima (s)</span><input id="s-pmax" type="number" min="0.5" step="0.5"></label>
+        </div>
+      </section>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar ajustes</button></div>
+    </form>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="static/app.js"></script>
+</body>
+</html>

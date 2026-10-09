@@ -164,7 +164,7 @@ def format_report(results: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def diagnose(config: Config, names: list[str], province: str, base_folder: str) -> tuple[str, Path]:
+def diagnose(config: Config, names: list[str], province: str, base_folder: str) -> tuple[str, Path, list[dict]]:
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
     out_dir = Path(base_folder) / f"diagnostico_{stamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -173,4 +173,4 @@ def diagnose(config: Config, names: list[str], province: str, base_folder: str) 
     report = format_report(results)
     (out_dir / "diagnostico.txt").write_text(report, encoding="utf-8")
     archive = Path(shutil.make_archive(str(out_dir), "zip", root_dir=out_dir))
-    return report, archive
+    return report, archive, results

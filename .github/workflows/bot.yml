@@ -7,6 +7,9 @@
 # - Secretos opcionales (Settings → Secrets and variables → Actions):
 #     TELEGRAM_TOKEN, TELEGRAM_CHAT_ID       avisos por Telegram
 #     IDEALISTA_API_KEY, IDEALISTA_API_SECRET API oficial de Idealista
+# - Web pública (opcional): con la variable CASASCAN_WEB = true y GitHub Pages activado
+#   (Settings → Pages → Source: GitHub Actions) se publica la plataforma en modo
+#   solo lectura con lo encontrado en cada búsqueda.
 # - La memoria (casascan.db) se guarda en la caché de Actions entre ejecuciones,
 #   así solo se avisa de lo nuevo. El informe queda en "Artifacts" de cada ejecución.
 # - Los servidores de GitHub no están en España: el BOE funciona, pero Idealista y
@@ -87,6 +90,17 @@ jobs:
           path: casascan.db
           key: casascan-db-${{ github.run_id }}
 
+      - name: Preparar la web pública
+        if: vars.CASASCAN_WEB == 'true' && github.event.inputs.modo != 'diagnostico'
+        run: |
+          CFG=config.yaml; [ -f "$CFG" ] || CFG=config.example.yaml
+          python -m casascan exportar-web -c "$CFG" --salida web_publica
+
+      - uses: actions/upload-pages-artifact@v3
+        if: vars.CASASCAN_WEB == 'true' && github.event.inputs.modo != 'diagnostico'
+        with:
+          path: web_publica
+
       - name: Subir el informe
         if: always()
         uses: actions/upload-artifact@v4
@@ -96,3 +110,17 @@ jobs:
             resultados/ultimo.*
             resultados/diagnostico_*.zip
           retention-days: 30
+
+  publicar:
+    needs: buscar
+    if: vars.CASASCAN_WEB == 'true' && github.event.inputs.modo != 'diagnostico'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

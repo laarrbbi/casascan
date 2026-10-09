@@ -1,0 +1,9 @@
+.git
+.venv
+venv
+__pycache__
+resultados
+web_publica
+*.db
+.casascan_navegador
+tests
